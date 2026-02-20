@@ -1,0 +1,11 @@
+---
+- name: Converge
+  hosts: all
+  tasks:
+    - name: "Vector"
+      include_role:
+        name: "vector-role"
+  provisioner:
+    name: ansible
+  verifier:
+    name: ansible
