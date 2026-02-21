@@ -38,6 +38,11 @@
     dest: /etc/vector/vector.toml
     mode: '0644'
   notify: Restart vector
+- name: Ensure systemd system directory exists
+  ansible.builtin.file:
+    path: /etc/systemd/system
+    state: directory
+    mode: '0755'
 - name: Create systemd service unit from template
   ansible.builtin.template:
     src: vector.service.j2

@@ -4,9 +4,7 @@
   gather_facts: false
   tasks:
     - name: Install Python
-      raw: |
-        set -e
-        dnf install -y python3 python3-libselinux
+      raw: dnf install -y python3 python3-libselinux
       args:
         executable: /bin/bash
       changed_when: false
