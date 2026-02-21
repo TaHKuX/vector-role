@@ -1,6 +1,6 @@
 ---
 - name: Restart vector
-  ansible.builtin.systemd:
+  systemd:
     name: vector
     state: restarted
-    daemon_reload: true
+  when: systemd_check.rc == 0

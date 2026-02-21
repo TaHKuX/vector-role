@@ -1,4 +1,6 @@
 galaxy_info:
+  role_name: vector
+  namespace: ronam
   author: Ronam
   description: Install Vector
   company: netology

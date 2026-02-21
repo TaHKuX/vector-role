@@ -44,8 +44,20 @@
     dest: /etc/systemd/system/vector.service
     mode: '0644'
   notify: Restart vector
-- name: Enable and start vector service
-  ansible.builtin.systemd:
+- name: Check if systemd is available
+  command: which systemctl
+  register: systemd_check
+  ignore_errors: true
+  changed_when: false
+  check_mode: false
+- name: Enable and start vector service (if systemd is present)
+  systemd:
     name: vector
-    state: started
     enabled: true
+    state: started
+  when: systemd_check.rc == 0
+  notify: Restart vector
+- name: Warn about missing systemd
+  debug:
+    msg: "Systemd not available in this container. Vector binary and config are installed, but service not started."
+  when: systemd_check.rc != 0
