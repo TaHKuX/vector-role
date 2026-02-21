@@ -44,6 +44,13 @@
     dest: /etc/systemd/system/vector.service
     mode: '0644'
   notify: Restart vector
+- name: Ensure vector data directory exists
+  ansible.builtin.file:
+    path: /var/lib/vector
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
 - name: Check if systemd is available
   command: which systemctl
   register: systemd_check

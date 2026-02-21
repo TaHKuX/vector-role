@@ -1,8 +1,83 @@
 ---
-- name: Verify
+- name: Verify Vector installation
   hosts: all
-  gather_facts: false
+  gather_facts: true
   tasks:
-    - name: Example assertion
-      assert:
-        that: true
+    - name: Check if vector binary exists
+      ansible.builtin.stat:
+        path: /usr/local/bin/vector
+      register: vector_binary
+
+    - name: Assert that vector binary is present
+      ansible.builtin.assert:
+        that:
+          - vector_binary.stat.exists
+        fail_msg: "Vector binary not found at /usr/local/bin/vector"
+        success_msg: "Vector binary is present"
+
+    - name: Get vector version
+      ansible.builtin.command: /usr/local/bin/vector --version
+      changed_when: false
+      register: vector_version
+
+    - name: Show vector version
+      ansible.builtin.debug:
+        msg: "{{ vector_version.stdout }}"
+
+    - name: Find vector config file
+      ansible.builtin.find:
+        paths: /etc/vector
+        patterns: "vector.*"
+        file_type: file
+      register: vector_config_files
+
+    - name: Fail if no config found
+      ansible.builtin.fail:
+        msg: "No vector config file found in /etc/vector"
+      when: vector_config_files.files | length == 0
+
+    - name: Set config file path
+      ansible.builtin.set_fact:
+        vector_config_path: "{{ vector_config_files.files[0].path }}"
+
+    - name: Check vector config syntax
+      ansible.builtin.command:
+        cmd: /usr/local/bin/vector validate {{ vector_config_path }}
+      changed_when: false
+      register: vector_validate
+      ignore_errors: true
+
+    - name: Assert config is valid
+      ansible.builtin.assert:
+        that:
+          - vector_validate.rc == 0
+        fail_msg: "Vector config validation failed: {{ vector_validate.stderr }}"
+        success_msg: "Vector config is valid"
+
+    - name: Check if systemd is available
+      ansible.builtin.command: which systemctl
+      changed_when: false
+      register: systemd_check
+      ignore_errors: true
+
+    - name: Check vector service status (if systemd)
+      ansible.builtin.systemd:
+        name: vector
+        state: started
+        enabled: true
+      register: vector_service
+      when: systemd_check.rc == 0
+      ignore_errors: true
+
+    - name: Assert vector service is active (if systemd)
+      ansible.builtin.assert:
+        that:
+          - vector_service.status.ActiveState == 'active'
+        fail_msg: "Vector service is not active"
+        success_msg: "Vector service is active and running"
+      when: systemd_check.rc == 0
+
+    - name: Warn if systemd not available
+      ansible.builtin.debug:
+        msg: "Systemd not available – skipping service status check"
+      when: systemd_check.rc != 0
